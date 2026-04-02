@@ -396,20 +396,7 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
     ),
 }
 
-IMAGE_SENSORS: Final[dict[str, SensorEntityDescription]] = {
-    "usps_mail_image_system_path": SensorEntityDescription(
-        name="Mail Image System Path",
-        icon="mdi:folder-multiple-image",
-        key="usps_mail_image_system_path",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-    "usps_mail_image_url": SensorEntityDescription(
-        name="Mail Image URL",
-        icon="mdi:link-variant",
-        key="usps_mail_image_url",
-        entity_category=EntityCategory.DIAGNOSTIC,
-    ),
-}
+IMAGE_SENSORS: Final[dict[str, SensorEntityDescription]] = {}
 
 # Name
 CAMERA_DATA = {
