@@ -79,7 +79,7 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
             tmp_list.append(tmp)
         updated_config[CONF_AMAZON_FWDS] = tmp_list
 
-        if updated_config != config_entry.data:
+    if updated_config != config_entry.data:
         hass.config_entries.async_update_entry(config_entry, data=updated_config)
 
     config_entry.add_update_listener(update_listener)
