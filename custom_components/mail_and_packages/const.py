@@ -69,77 +69,58 @@ DEFAULT_AMAZON_DAYS = 3
 
 # Amazon
 AMAZON_DOMAINS = [
-    "amazon.com",
-    "amazon.ca",
-    "amazon.co.uk",
-    "amazon.in",
-    "amazon.de",
-    "amazon.it",
-    "amazon.com.au",
-    "amazon.pl",
     "amazon.es",
 ]
+
 AMAZON_DELIVERED_SUBJECT = [
-    "Delivered: Your",
-    "Consegna effettuata:",
-    "Dostarczono:",
-    "Geliefert:",
     "Entregado:",
 ]
+
 AMAZON_SHIPMENT_TRACKING = [
     "shipment-tracking",
-    "conferma-spedizione",
     "confirmar-envio",
 ]
+
 AMAZON_EMAIL = [
-    "order-update@amazon.es",
     "auto-confirm@amazon.es",
+    "order-update@amazon.es",
     "confirmar-envio@amazon.es",
     "shipment-tracking@amazon.es",
 ]
+
 AMAZON_PACKAGES = "amazon_packages"
 AMAZON_ORDER = "amazon_order"
 AMAZON_DELIVERED = "amazon_delivered"
+
 AMAZON_IMG_PATTERN = (
     "(https://)([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-;]*[\\w@?^=%&/~+#-;])?"
 )
+
 AMAZON_HUB = "amazon_hub"
 AMAZON_HUB_CODE = "amazon_hub_code"
 AMAZON_HUB_EMAIL = [
-    "thehub@amazon.com",
-    "order-update@amazon.com",
     "order-update@amazon.es",
 ]
+
 AMAZON_HUB_SUBJECT = "ready for pickup from Amazon Hub Locker"
 AMAZON_HUB_SUBJECT_SEARCH = "(You have a package to pick up)(.*)(\\d{6})"
 AMAZON_HUB_BODY = "(Your pickup code is <b>)(\\d{6})"
+
 AMAZON_TIME_PATTERN = [
-    "will arrive:",
-    "estimated delivery date is:",
-    "guaranteed delivery date is:",
-    "Arriving:",
-    "Arriverà:",
-    "arriving:",
-    "Dostawa:",
-    "Zustellung:",
-    "Llega hoy",
-    "llega hoy",
-    "Entrega hoy",
-    "entrega hoy",
-    "Entregado hoy",
+    "En reparto:",
+    "en reparto:",
+    "¡Tu paquete está en reparto!",
+    "¡Tu paquete se ha enviado!",
+    "Entregado:",
 ]
-AMAZON_EXCEPTION_SUBJECT = "Delivery update:"
-AMAZON_EXCEPTION_BODY = "running late"
+
+AMAZON_EXCEPTION_SUBJECT = "Actualización de entrega:"
+AMAZON_EXCEPTION_BODY = "retraso"
 AMAZON_EXCEPTION = "amazon_exception"
 AMAZON_EXCEPTION_ORDER = "amazon_exception_order"
 AMAZON_PATTERN = "[0-9]{3}-[0-9]{7}-[0-9]{7}"
+
 AMAZON_LANGS = [
-    "it_IT",
-    "it_IT.UTF-8",
-    "pl_PL",
-    "pl_PL.UTF-8",
-    "de_DE",
-    "de_DE.UTF-8",
     "es_ES",
     "es_ES.UTF-8",
     "",
@@ -150,119 +131,88 @@ SENSOR_DATA = {
     # Amazon
     "amazon_packages": {},
     "amazon_delivered": {
-        "email": [
-            "order-update@amazon.es",
-            "auto-confirm@amazon.es",
-            "confirmar-envio@amazon.es",
-            "shipment-tracking@amazon.es",
-        ],
-        "subject": [
-            "Entregado:",
-            "entregado:",
-            "Delivered:",
-            "Consegna effettuata:",
-            "Dostarczono:",
-            "Geliefert:",
-        ],
+        "email": ["order-update@amazon.es"],
+        "subject": ["Entregado:"],
+        "body": ["¡Tu paquete se ha entregado!"],
     },
     "amazon_exception": {
         "email": [
             "order-update@amazon.es",
-            "auto-confirm@amazon.es",
             "confirmar-envio@amazon.es",
             "shipment-tracking@amazon.es",
         ],
-        "subject": [
-            "Actualización de entrega:",
-            "Delivery update:",
-        ],
-        "body": [
-            "retraso",
-            "running late",
-        ],
+        "subject": ["Actualización de entrega:"],
+        "body": ["retraso"],
     },
 
     # Correos
     "correos_delivered": {
         "email": ["no-reply@correosexpress.com"],
-        "subject": [
-            # Voeg hier later echte onderwerpregels toe
-        ],
+        "subject": [], #yet to be defined
     },
     "correos_delivering": {
         "email": ["no-reply@correosexpress.com"],
-        "subject": [
-            # Voeg hier later echte onderwerpregels toe
-        ],
+        "subject": [], #yet to be defined
     },
     "correos_packages": {},
     "correos_tracking": {
-        "pattern": [
-            # Voeg hier later tracking regex toe indien gewenst
-        ]
+        "pattern": [] #yet to be defined
     },
 
     # CTT Express
     "ctt_express_delivered": {
         "email": ["noreplyclientes@cttexpress.org"],
-        "subject": [
-            # Voeg hier later echte onderwerpregels toe
-        ],
+        "subject": ["Información envío -"],
+        "body": ["ha sido entregado", "Entregado a"],
     },
     "ctt_express_delivering": {
         "email": ["noreplyclientes@cttexpress.org"],
-        "subject": [
-            # Voeg hier later echte onderwerpregels toe
-        ],
+        "subject": ["Información envío -"],
+        "body": ["está en reparto"],
     },
     "ctt_express_packages": {},
     "ctt_express_tracking": {
-        "pattern": [
-            # Voeg hier later tracking regex toe indien gewenst
-        ]
+        "pattern": ["\\d{22}"]
     },
 
     # TIPSA
     "tipsa_delivered": {
         "email": ["no-reply@tip-sa.com"],
-        "subject": [
-            # Voeg hier later echte onderwerpregels toe
-        ],
+        "subject": ["INFORMACIÓN SOBRE TU ENVÍO - TIPSA"],
+        "body": ["ha sido entregado"],
     },
     "tipsa_delivering": {
         "email": ["no-reply@tip-sa.com"],
-        "subject": [
-            # Voeg hier later echte onderwerpregels toe
-        ],
+        "subject": ["INFORMACIÓN SOBRE TU ENVÍO - TIPSA"],
+        "body": ["se encuentra en reparto", "se encuentra en camino"],
     },
     "tipsa_packages": {},
     "tipsa_tracking": {
-        "pattern": [
-            # Voeg hier later tracking regex toe indien gewenst
-        ]
+        "pattern": ["\\d{22}"]
     },
 
     # GLS Spain
     "gls_delivered": {
         "email": ["noreply@comunicaciones.gls-spain.com"],
-        "subject": [
-            # Voeg hier later echte onderwerpregels toe
-        ],
+        "subject": [], #yet to be defined
+        "body": [], #yet to be defined
     },
     "gls_delivering": {
         "email": ["noreply@comunicaciones.gls-spain.com"],
         "subject": [
-            # Voeg hier later echte onderwerpregels toe
+            "está en reparto",
+            "está en camino",
+        ],
+        "body": [
+            "ya está en reparto",
+            "está en camino",
         ],
     },
     "gls_packages": {},
     "gls_tracking": {
-        "pattern": [
-            # Voeg hier later tracking regex toe indien gewenst
-        ]
+        "pattern": ["\\d{10}"]
     },
 }
-
 # Sensor definitions
 SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
     "mail_updated": SensorEntityDescription(
