@@ -18,13 +18,16 @@ from .const import (
     CONF_IMAP_TIMEOUT,
     CONF_PATH,
     CONF_SCAN_INTERVAL,
+    CONF_CORREOS_CODES,
     COORDINATOR,
     DEFAULT_AMAZON_DAYS,
     DEFAULT_IMAP_TIMEOUT,
+    DEFAULT_CORREOS_CODES,
     DOMAIN,
     ISSUE_URL,
     PLATFORMS,
     VERSION,
+
 )
 from .helpers import default_image_path, process_emails
 
