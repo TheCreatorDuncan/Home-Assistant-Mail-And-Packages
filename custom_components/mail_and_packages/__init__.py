@@ -55,6 +55,10 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     if CONF_AMAZON_FWDS not in updated_config.keys():
         updated_config[CONF_AMAZON_FWDS] = []
 
+    # Set Correos codes blank if missing
+    if CONF_CORREOS_CODES not in updated_config.keys():
+        updated_config[CONF_CORREOS_CODES] = DEFAULT_CORREOS_CODES
+
     # Set default timeout if missing
     if CONF_IMAP_TIMEOUT not in updated_config.keys():
         updated_config[CONF_IMAP_TIMEOUT] = DEFAULT_IMAP_TIMEOUT
@@ -81,6 +85,17 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         else:
             tmp_list.append(tmp)
         updated_config[CONF_AMAZON_FWDS] = tmp_list
+
+    # Make sure Correos codes are not a string
+    if isinstance(updated_config[CONF_CORREOS_CODES], str):
+        tmp = updated_config[CONF_CORREOS_CODES]
+        tmp_list = []
+        if "," in tmp:
+            tmp_list = [x.strip() for x in tmp.split(",") if x.strip()]
+        else:
+            if tmp.strip():
+                tmp_list.append(tmp.strip())
+        updated_config[CONF_CORREOS_CODES] = tmp_list
 
     if updated_config != config_entry.data:
         hass.config_entries.async_update_entry(config_entry, data=updated_config)
