@@ -20,6 +20,7 @@ from .const import (
     CONF_ALLOW_EXTERNAL,
     CONF_AMAZON_DAYS,
     CONF_AMAZON_FWDS,
+    CONF_CORREOS_CODES,
     CONF_CUSTOM_IMG,
     CONF_CUSTOM_IMG_FILE,
     CONF_DURATION,
@@ -32,6 +33,7 @@ from .const import (
     DEFAULT_ALLOW_EXTERNAL,
     DEFAULT_AMAZON_DAYS,
     DEFAULT_AMAZON_FWDS,
+    DEFAULT_CORREOS_CODES,
     DEFAULT_CUSTOM_IMG,
     DEFAULT_CUSTOM_IMG_FILE,
     DEFAULT_FOLDER,
@@ -74,6 +76,25 @@ async def _check_amazon_forwards(forwards: str) -> tuple:
     return errors, amazon_forwards_list
 
 
+async def _check_correos_codes(codes: str) -> tuple:
+    """Validate and format manual Correos tracking codes.
+
+    Returns tuple: list of errors, list of tracking codes
+    """
+    correos_codes_list = []
+    errors = []
+
+    if "," in codes:
+        correos_codes_list = [x.strip() for x in codes.split(",") if x.strip()]
+    elif codes != "" and codes:
+        correos_codes_list.append(codes.strip())
+
+    # later kunnen we hier regex-validatie toevoegen
+    errors.append("ok")
+
+    return errors, correos_codes_list
+
+
 async def _validate_user_input(user_input: dict) -> tuple:
     """Valididate user input from config flow.
 
@@ -90,6 +111,15 @@ async def _validate_user_input(user_input: dict) -> tuple:
             user_input[CONF_AMAZON_FWDS] = amazon_list
             errors[CONF_AMAZON_FWDS] = status[0]
 
+    # Validate manual Correos tracking codes
+    if CONF_CORREOS_CODES in user_input and isinstance(user_input[CONF_CORREOS_CODES], str):
+        status, correos_list = await _check_correos_codes(user_input[CONF_CORREOS_CODES])
+        if status[0] == "ok":
+            user_input[CONF_CORREOS_CODES] = correos_list
+        else:
+            user_input[CONF_CORREOS_CODES] = correos_list
+            errors[CONF_CORREOS_CODES] = status[0]
+            
     # Check for ffmpeg if option enabled
     if user_input[CONF_GENERATE_MP4]:
         valid = await _check_ffmpeg()
@@ -187,6 +217,9 @@ def _get_schema_step_2(data: list, user_input: list, default_dict: list) -> Any:
             ): cv.multi_select(get_resources()),
             vol.Optional(
                 CONF_AMAZON_FWDS, default=_get_default(CONF_AMAZON_FWDS, "")
+            ): str,
+            vol.Optional(
+                CONF_CORREOS_CODES, default=_get_default(CONF_CORREOS_CODES, "")
             ): str,
             vol.Optional(CONF_AMAZON_DAYS, default=_get_default(CONF_AMAZON_DAYS)): int,
             vol.Optional(
@@ -301,6 +334,7 @@ class MailAndPackagesFlowHandler(config_entries.ConfigFlow, domain=DOMAIN):
             CONF_IMAGE_SECURITY: DEFAULT_IMAGE_SECURITY,
             CONF_IMAP_TIMEOUT: DEFAULT_IMAP_TIMEOUT,
             CONF_AMAZON_FWDS: DEFAULT_AMAZON_FWDS,
+            CONF_CORREOS_CODES: "",
             CONF_AMAZON_DAYS: DEFAULT_AMAZON_DAYS,
             CONF_GENERATE_MP4: False,
             CONF_ALLOW_EXTERNAL: DEFAULT_ALLOW_EXTERNAL,
@@ -409,6 +443,7 @@ class MailAndPackagesOptionsFlow(config_entries.OptionsFlow):
             CONF_IMAP_TIMEOUT: self._data.get(CONF_IMAP_TIMEOUT)
             or DEFAULT_IMAP_TIMEOUT,
             CONF_AMAZON_FWDS: self._data.get(CONF_AMAZON_FWDS) or DEFAULT_AMAZON_FWDS,
+            CONF_CORREOS_CODES: ",".join(self._data.get(CONF_CORREOS_CODES, [])),
             CONF_AMAZON_DAYS: self._data.get(CONF_AMAZON_DAYS) or DEFAULT_AMAZON_DAYS,
             CONF_GENERATE_MP4: self._data.get(CONF_GENERATE_MP4),
             CONF_ALLOW_EXTERNAL: self._data.get(CONF_ALLOW_EXTERNAL),
