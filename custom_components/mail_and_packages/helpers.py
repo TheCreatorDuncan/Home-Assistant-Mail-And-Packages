@@ -868,18 +868,19 @@ def get_items(
 ) -> Union[List[str], int]:
     """Parse Amazon emails for order number and active package state.
 
-    Returns list of order numbers or email count as integer
+    Returns list of active order numbers or active email count as integer
     """
     past_date = datetime.date.today() - datetime.timedelta(days=days)
     tfmt = past_date.strftime("%d-%b-%Y")
 
     active_orders = []
+    delivered_orders = []
     order_number = []
 
     forward_list = _process_amazon_forwards(fwds)
     email_addresses = _get_sender_list(AMAZON_EMAIL, forward_list)
 
-    amazon_active_subjects = [
+    active_subjects = [
         "pedido:",
         "enviado:",
         "en reparto:",
@@ -888,11 +889,22 @@ def get_items(
         "fw: en reparto:",
     ]
 
-    amazon_active_body = [
-        "¡gracias por tu pedido!",
+    active_body_markers = [
+        "¡gracias por tu pedido",
         "¡tu paquete se ha enviado!",
         "¡tu paquete está en reparto!",
     ]
+
+    delivered_subjects = [
+        "entregado:",
+        "fw: entregado:",
+    ]
+
+    delivered_body_markers = [
+        "¡tu paquete se ha entregado!",
+    ]
+
+    order_pattern = re.compile(r"[0-9]{3}-[0-9]{7}-[0-9]{7}")
 
     for email_address in email_addresses:
         (server_response, sdata) = email_search(account, [email_address], tfmt)
@@ -916,7 +928,9 @@ def get_items(
                     subject_parts = []
                     for part, encoding in decoded_parts:
                         if isinstance(part, bytes):
-                            subject_parts.append(part.decode(encoding or "utf-8", "ignore"))
+                            subject_parts.append(
+                                part.decode(encoding or "utf-8", "ignore")
+                            )
                         else:
                             subject_parts.append(part)
                     email_subject = "".join(subject_parts)
@@ -925,7 +939,7 @@ def get_items(
 
                 email_subject_l = email_subject.lower()
 
-                # Get body text
+                # Get all body text
                 email_msg = ""
                 for part in msg.walk():
                     if part.get_content_type() not in ["text/html", "text/plain"]:
@@ -940,42 +954,45 @@ def get_items(
 
                 email_msg_l = email_msg.lower()
 
-                # Extract Amazon order number
-                pattern = re.compile(r"[0-9]{3}-[0-9]{7}-[0-9]{7}")
+                found_subject_orders = order_pattern.findall(email_subject)
+                found_body_orders = order_pattern.findall(email_msg)
 
-                found_subject_orders = pattern.findall(email_subject)
-                found_body_orders = pattern.findall(email_msg)
-
+                all_found_orders = []
                 for found in found_subject_orders + found_body_orders:
+                    if found not in all_found_orders:
+                        all_found_orders.append(found)
                     if found not in order_number:
                         order_number.append(found)
 
-                # Decide if this mail counts as an active package
                 is_active = False
+                is_delivered = False
 
-                if any(text in email_subject_l for text in amazon_active_subjects):
+                if any(text in email_subject_l for text in active_subjects):
+                    is_active = True
+                if any(text in email_msg_l for text in active_body_markers):
                     is_active = True
 
-                if any(text in email_msg_l for text in amazon_active_body):
-                    is_active = True
+                if any(text in email_subject_l for text in delivered_subjects):
+                    is_delivered = True
+                if any(text in email_msg_l for text in delivered_body_markers):
+                    is_delivered = True
 
+                # If delivered, remember order so it can be removed from active
+                if is_delivered:
+                    for found in all_found_orders:
+                        if found not in delivered_orders:
+                            delivered_orders.append(found)
+
+                # If active, add order unless already known active
                 if is_active:
-                    if found_subject_orders:
-                        for found in found_subject_orders:
-                            if found not in active_orders:
-                                active_orders.append(found)
-                    elif found_body_orders:
-                        for found in found_body_orders:
-                            if found not in active_orders:
-                                active_orders.append(found)
-                    else:
-                        # fallback if we have no order number but still detect an active Amazon mail
-                        marker = f"amazon-mail-{i.decode() if isinstance(i, bytes) else i}"
-                        if marker not in active_orders:
-                            active_orders.append(marker)
+                    for found in all_found_orders:
+                        if found not in active_orders:
+                            active_orders.append(found)
+
+    # Remove delivered orders from active list
+    active_orders = [order for order in active_orders if order not in delivered_orders]
 
     if param == "count":
         return len(active_orders)
 
-    # Return real Amazon order numbers only
-    return [x for x in order_number if re.match(r"[0-9]{3}-[0-9]{7}-[0-9]{7}", x)]
+    return active_orders
