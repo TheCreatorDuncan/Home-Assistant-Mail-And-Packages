@@ -58,6 +58,7 @@ from .const import (
     CONF_ALLOW_EXTERNAL,
     CONF_AMAZON_DAYS,
     CONF_AMAZON_FWDS,
+    CONF_CORREOS_CODES,
     CONF_CUSTOM_IMG,
     CONF_CUSTOM_IMG_FILE,
     CONF_FOLDER,
@@ -127,6 +128,8 @@ def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
     pwd = config.get(CONF_PASSWORD)
     folder = config.get(CONF_FOLDER)
     resources = config.get(CONF_RESOURCES)
+    correos_codes = config.get(CONF_CORREOS_CODES, [])
+    _LOGGER.debug("Configured manual Correos codes: %s", correos_codes)
 
     data = {}
 
