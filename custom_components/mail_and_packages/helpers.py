@@ -866,17 +866,33 @@ def get_items(
     fwds: Optional[str] = None,
     days: int = DEFAULT_AMAZON_DAYS,
 ) -> Union[List[str], int]:
-    """Parse Amazon emails for delivery date and order number.
+    """Parse Amazon emails for order number and active package state.
 
     Returns list of order numbers or email count as integer
     """
     past_date = datetime.date.today() - datetime.timedelta(days=days)
     tfmt = past_date.strftime("%d-%b-%Y")
-    deliveries_today = []
+
+    active_orders = []
     order_number = []
 
     forward_list = _process_amazon_forwards(fwds)
     email_addresses = _get_sender_list(AMAZON_EMAIL, forward_list)
+
+    amazon_active_subjects = [
+        "pedido:",
+        "enviado:",
+        "en reparto:",
+        "fw: pedido:",
+        "fw: enviado:",
+        "fw: en reparto:",
+    ]
+
+    amazon_active_body = [
+        "¡gracias por tu pedido!",
+        "¡tu paquete se ha enviado!",
+        "¡tu paquete está en reparto!",
+    ]
 
     for email_address in email_addresses:
         (server_response, sdata) = email_search(account, [email_address], tfmt)
@@ -893,104 +909,73 @@ def get_items(
 
                 msg = email.message_from_bytes(response_part[1])
 
-                encoding = decode_header(msg["subject"])[0][1]
-                if encoding is not None:
-                    email_subject = decode_header(msg["subject"])[0][0].decode(
-                        encoding, "ignore"
-                    )
-                else:
-                    email_subject = decode_header(msg["subject"])[0][0]
-                    if isinstance(email_subject, bytes):
-                        email_subject = email_subject.decode("utf-8", "ignore")
-
-                pattern = re.compile(r"[0-9]{3}-[0-9]{7}-[0-9]{7}")
-
-                if (
-                    (found := pattern.findall(str(email_subject)))
-                    and len(found) > 0
-                    and found[0] not in order_number
-                ):
-                    order_number.append(found[0])
-
+                # Decode subject safely
                 try:
-                    email_msg = quopri.decodestring(str(msg.get_payload(0)))
+                    raw_subject = msg["subject"] or ""
+                    decoded_parts = decode_header(raw_subject)
+                    subject_parts = []
+                    for part, encoding in decoded_parts:
+                        if isinstance(part, bytes):
+                            subject_parts.append(part.decode(encoding or "utf-8", "ignore"))
+                        else:
+                            subject_parts.append(part)
+                    email_subject = "".join(subject_parts)
                 except Exception:
-                    continue
+                    email_subject = str(msg["subject"] or "")
 
-                email_msg = email_msg.decode("utf-8", "ignore")
+                email_subject_l = email_subject.lower()
 
-                if (
-                    (found := pattern.findall(email_msg))
-                    and len(found) > 0
-                    and found[0] not in order_number
-                ):
-                    order_number.append(found[0])
-
-                for search in AMAZON_TIME_PATTERN:
-                    if search not in email_msg:
+                # Get body text
+                email_msg = ""
+                for part in msg.walk():
+                    if part.get_content_type() not in ["text/html", "text/plain"]:
+                        continue
+                    payload = part.get_payload(decode=True)
+                    if payload is None:
+                        continue
+                    try:
+                        email_msg += payload.decode("utf-8", "ignore")
+                    except Exception:
                         continue
 
-                    start = email_msg.find(search) + len(search)
-                    end = -1
+                email_msg_l = email_msg.lower()
 
-                    if email_msg.find("Previously expected:") != -1:
-                        end = email_msg.find("Previously expected:")
-                    elif email_msg.find("Track your") != -1:
-                        end = email_msg.find("Track your")
-                    elif email_msg.find("Per tracciare il tuo pacco") != -1:
-                        end = email_msg.find("Per tracciare il tuo pacco")
-                    elif email_msg.find("View or manage order") != -1:
-                        end = email_msg.find("View or manage order")
+                # Extract Amazon order number
+                pattern = re.compile(r"[0-9]{3}-[0-9]{7}-[0-9]{7}")
 
-                    arrive_date = email_msg[start:end].replace(">", "").strip()
-                    arrive_date = arrive_date.split(" ")
-                    arrive_date = arrive_date[0:3]
-                    arrive_date = " ".join(arrive_date).strip()
+                found_subject_orders = pattern.findall(email_subject)
+                found_body_orders = pattern.findall(email_msg)
 
-                    for lang in AMAZON_LANGS:
-                        try:
-                            locale.setlocale(locale.LC_TIME, lang)
-                        except Exception:
-                            continue
+                for found in found_subject_orders + found_body_orders:
+                    if found not in order_number:
+                        order_number.append(found)
 
-                        if "today" in arrive_date.lower():
-                            deliveries_today.append("Amazon Order")
-                            break
-                        if "hoy" in arrive_date.lower():
-                            deliveries_today.append("Amazon Order")
-                            break
-                        if "mañana" in arrive_date.lower():
-                            break
-                        if "tomorrow" in arrive_date.lower():
-                            break
+                # Decide if this mail counts as an active package
+                is_active = False
 
-                        if arrive_date.endswith(","):
-                            new_arrive_date = arrive_date.rstrip(",")
-                            time_format = "%A, %B %d"
-                        elif "," not in arrive_date:
-                            new_arrive_date = arrive_date
-                            time_format = "%A %d %B"
-                        else:
-                            new_arrive_date = arrive_date
-                            time_format = "%A, %B %d"
+                if any(text in email_subject_l for text in amazon_active_subjects):
+                    is_active = True
 
-                        try:
-                            dateobj = datetime.datetime.strptime(
-                                new_arrive_date, time_format
-                            )
-                        except ValueError:
-                            continue
+                if any(text in email_msg_l for text in amazon_active_body):
+                    is_active = True
 
-                        if (
-                            dateobj.day == datetime.date.today().day
-                            and dateobj.month == datetime.date.today().month
-                        ):
-                            deliveries_today.append("Amazon Order")
-                            break
+                if is_active:
+                    if found_subject_orders:
+                        for found in found_subject_orders:
+                            if found not in active_orders:
+                                active_orders.append(found)
+                    elif found_body_orders:
+                        for found in found_body_orders:
+                            if found not in active_orders:
+                                active_orders.append(found)
+                    else:
+                        # fallback if we have no order number but still detect an active Amazon mail
+                        marker = f"amazon-mail-{i.decode() if isinstance(i, bytes) else i}"
+                        if marker not in active_orders:
+                            active_orders.append(marker)
 
     if param == "count":
-        if len(deliveries_today) > len(order_number):
-            return len(order_number)
-        return len(deliveries_today)
+        return len(active_orders)
 
-    return order_number
+    # Return real Amazon order numbers only
+    return [x for x in order_number if re.match(r"[0-9]{3}-[0-9]{7}-[0-9]{7}", x)]
