@@ -118,19 +118,14 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     # Setup the data coordinator
     coordinator = MailDataUpdateCoordinator(hass, host, the_timeout, interval, config)
 
-    # Fetch initial data so we have data when entities subscribe
-    await coordinator.async_refresh()
-
-    # Raise ConfEntryNotReady if coordinator didn't update
-    if not coordinator.last_update_success:
-        _LOGGER.error("Error updating sensor data: %s", coordinator.last_exception)
-        raise ConfigEntryNotReady
-
     hass.data[DOMAIN][config_entry.entry_id] = {
         COORDINATOR: coordinator,
     }
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
+
+    # Start first refresh in the background so setup itself does not get cancelled
+    hass.async_create_task(coordinator.async_refresh())
 
     return True
 
