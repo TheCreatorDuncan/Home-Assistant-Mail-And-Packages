@@ -152,9 +152,11 @@ def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
     pwd = config.get(CONF_PASSWORD)
     folder = config.get(CONF_FOLDER)
     resources = config.get(CONF_RESOURCES)
-    correos_codes = config.get(CONF_CORREOS_CODES, [])
-    _LOGGER.debug("Configured manual Correos codes: %s", correos_codes)
 
+    # Manual Correos codes from config + helper
+    correos_codes = _get_manual_correos_codes(hass, config)
+
+    # Create the dict container
     data = {}
 
     account = login(host, port, user, pwd)
