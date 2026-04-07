@@ -116,6 +116,30 @@ def default_image_path(
     """Return value of the default image path."""
     return "custom_components/mail_and_packages/images/"
 
+def _get_manual_correos_codes(hass: HomeAssistant, config: ConfigEntry) -> list:
+    """Get manual Correos tracking codes from config and helper."""
+    codes = []
+
+    # Codes from integration config
+    config_codes = config.get(CONF_CORREOS_CODES, [])
+    if isinstance(config_codes, list):
+        for code in config_codes:
+            code = str(code).strip()
+            if code and code not in codes:
+                codes.append(code)
+
+    # Codes from input_text helper
+    helper = hass.states.get("input_text.correos_tracking")
+    if helper is not None:
+        helper_value = helper.state
+        if helper_value not in [None, "", "unknown", "unavailable"]:
+            helper_codes = [x.strip() for x in helper_value.split(",") if x.strip()]
+            for code in helper_codes:
+                if code not in codes:
+                    codes.append(code)
+
+    return codes
+
 
 def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
     """Process emails and return value.
