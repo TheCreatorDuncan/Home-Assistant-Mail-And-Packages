@@ -179,6 +179,8 @@ def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
         }
     )
 
+    _LOGGER.debug("Configured manual Correos codes: %s", correos_codes)
+    
     for sensor in resources:
         fetch(hass, config, account, data, sensor)
 
