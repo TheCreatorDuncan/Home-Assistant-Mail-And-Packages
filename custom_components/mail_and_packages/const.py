@@ -15,6 +15,7 @@ PLATFORMS = ["camera", "sensor"]
 DATA = "data"
 COORDINATOR = "coordinator_mail"
 OVERLAY = ["overlay.png", "vignette.png", "white.png"]
+SERVICE_FORCE_SCAN = "force_scan"
 SERVICE_UPDATE_FILE_PATH = "update_file_path"
 CAMERA = "cameras"
 
