@@ -14,6 +14,8 @@ from datetime import timezone
 from email.header import decode_header
 from shutil import copyfile, copytree, which
 from typing import Any, List, Optional, Type, Union
+from urllib.parse import quote
+from urllib.request import Request, urlopen
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
@@ -140,6 +142,70 @@ def _get_manual_correos_codes(hass: HomeAssistant, config: ConfigEntry) -> list:
 
     return codes
 
+def get_correos_tracking_data(codes: list) -> dict:
+    """Fetch Correos tracking data for manually entered tracking codes."""
+    result = {
+        "correos_packages": 0,
+        "correos_delivering": 0,
+        "correos_delivered": 0,
+        "correos_tracking": [],
+        "correos_details": [],
+    }
+
+    if not codes:
+        return result
+
+    for code in codes:
+        status = "unknown"
+        detail = {"code": code, "status": "unknown"}
+
+        try:
+            url = (
+                "https://www.correos.es/es/es/herramientas/localizador/envios?numero="
+                f"{quote(code)}"
+            )
+            req = Request(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                },
+            )
+            with urlopen(req, timeout=20) as response:
+                html = response.read().decode("utf-8", "ignore")
+
+            text = " ".join(html.split()).lower()
+
+            if "entregado" in text:
+                status = "delivered"
+                result["correos_delivered"] += 1
+            elif "en reparto" in text or "proceso de entrega" in text:
+                status = "delivering"
+                result["correos_delivering"] += 1
+            elif (
+                "en tránsito" in text
+                or "en transito" in text
+                or "en camino" in text
+                or "admitido" in text
+                or "clasificado" in text
+                or "en oficina" in text
+            ):
+                status = "transit"
+                result["correos_delivering"] += 1
+
+            detail["status"] = status
+
+        except Exception as err:
+            _LOGGER.debug("Correos tracking lookup failed for %s: %s", code, err)
+
+        result["correos_tracking"].append(code)
+        result["correos_details"].append(detail)
+
+    result["correos_packages"] = (
+        result["correos_delivering"] + result["correos_delivered"]
+    )
+
+    return result
+
 
 def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
     """Process emails and return value.
@@ -180,6 +246,11 @@ def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
     )
 
     _LOGGER.debug("Configured manual Correos codes: %s", correos_codes)
+
+    if correos_codes:
+        correos_info = get_correos_tracking_data(correos_codes)
+        data.update(correos_info)
+        _LOGGER.debug("Manual Correos tracking data: %s", correos_info)
     
     for sensor in resources:
         fetch(hass, config, account, data, sensor)
