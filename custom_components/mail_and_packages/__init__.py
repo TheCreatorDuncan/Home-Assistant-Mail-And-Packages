@@ -26,6 +26,7 @@ from .const import (
     DOMAIN,
     ISSUE_URL,
     PLATFORMS,
+    SERVICE_FORCE_SCAN,
     VERSION,
 
 )
@@ -121,6 +122,21 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
     hass.data[DOMAIN][config_entry.entry_id] = {
         COORDINATOR: coordinator,
     }
+
+    if not hass.services.has_service(DOMAIN, SERVICE_FORCE_SCAN):
+
+        async def handle_force_scan(call):
+            """Force refresh all Mail and Packages coordinators."""
+            tasks = []
+            for entry_data in hass.data.get(DOMAIN, {}).values():
+                entry_coordinator = entry_data.get(COORDINATOR)
+                if entry_coordinator is not None:
+                    tasks.append(entry_coordinator.async_refresh())
+
+            if tasks:
+                await asyncio.gather(*tasks)
+
+        hass.services.async_register(DOMAIN, SERVICE_FORCE_SCAN, handle_force_scan)
 
     await hass.config_entries.async_forward_entry_setups(config_entry, PLATFORMS)
 
