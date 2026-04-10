@@ -121,11 +121,10 @@ def default_image_path(
     """Return value of the default image path."""
     return "custom_components/mail_and_packages/images/"
 
-def _get_manual_correos_codes(hass: HomeAssistant, config: ConfigEntry) -> list:
-    """Get manual Correos tracking codes from config and helper."""
+def _get_manual_tracking_codes(hass: HomeAssistant, config: ConfigEntry) -> list:
+    """Get manual tracking codes from config and helper."""
     codes = []
 
-    # Codes from integration config
     config_codes = config.get(CONF_CORREOS_CODES, [])
     if isinstance(config_codes, list):
         for code in config_codes:
@@ -133,7 +132,6 @@ def _get_manual_correos_codes(hass: HomeAssistant, config: ConfigEntry) -> list:
             if code and code not in codes:
                 codes.append(code)
 
-    # Codes from input_text helper
     helper = hass.states.get("input_text.correos_tracking")
     if helper is not None:
         helper_value = helper.state
@@ -144,6 +142,24 @@ def _get_manual_correos_codes(hass: HomeAssistant, config: ConfigEntry) -> list:
                     codes.append(code)
 
     return codes
+
+def _detect_manual_carrier(code: str) -> str:
+    """Detect carrier for manually entered tracking codes."""
+    if not code:
+        return "unknown"
+
+    code = str(code).strip().upper()
+
+    # Correos examples: PKBW0E075780617R
+    if re.fullmatch(r"[A-Z]{2,5}[A-Z0-9]{8,20}R", code):
+        return "correos"
+
+    # DHL example: CG841764818DE
+    if re.fullmatch(r"[A-Z]{2}[0-9]{9}[A-Z]{2}", code):
+        return "dhl"
+
+    return "unknown"
+
 
 def _strip_accents(value: str) -> str:
     return "".join(
@@ -170,6 +186,39 @@ def _normalize_correos_status(text: str) -> str:
         or "admitido" in status
         or "clasificado" in status
     ):
+        return "in_transit"
+
+    return "unknown"
+
+def _normalize_dhl_status(text: str) -> str:
+    """Normalize DHL tracking status text."""
+    if not text:
+        return "unknown"
+
+    status = text.strip().lower()
+
+    if any(x in status for x in [
+        "delivered",
+        "successfully delivered",
+        "shipment has been delivered",
+    ]):
+        return "delivered"
+
+    if any(x in status for x in [
+        "out for delivery",
+        "delivery vehicle",
+        "with the delivery courier",
+    ]):
+        return "delivering"
+
+    if any(x in status for x in [
+        "parcel center",
+        "processed",
+        "export parcel center",
+        "shipment has been processed",
+        "transported",
+        "international shipment",
+    ]):
         return "in_transit"
 
     return "unknown"
@@ -278,6 +327,99 @@ def get_correos_tracking_data(codes: list) -> dict:
 
     return result
     
+def get_dhl_tracking_data(codes: list) -> dict:
+    """Fetch DHL tracking data for manually entered tracking codes."""
+    result = {
+        "dhl_packages": 0,
+        "dhl_delivering": 0,
+        "dhl_delivered": 0,
+        "dhl_tracking": [],
+        "dhl_details": [],
+    }
+
+    if not codes:
+        return result
+
+    for code in codes:
+        normalized_status = "unknown"
+        detail = {"code": code, "status": "unknown"}
+
+        try:
+            url = (
+                "https://www.dhl.de/int-verfolgen/data/search"
+                f"?piececode={quote(code)}&noRedirect=true&language=en"
+            )
+            req = Request(
+                url,
+                headers={
+                    "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/json",
+                    "Referer": "https://www.dhl.de/",
+                },
+            )
+
+            with urlopen(req, timeout=20) as response:
+                raw = response.read().decode("utf-8", "ignore")
+
+            payload = json.loads(raw)
+            shipments = payload.get("sendungen", [])
+
+            if not shipments:
+                _LOGGER.debug("DHL API returned no shipments for %s", code)
+                result["dhl_tracking"].append(code)
+                result["dhl_details"].append(detail)
+                continue
+
+            shipment = shipments[0]
+            details = shipment.get("sendungsdetails", {})
+            history = details.get("sendungsverlauf", {})
+            events = history.get("events", [])
+
+            latest_event = events[-1] if events else {}
+
+            raw_status = (
+                latest_event.get("status")
+                or history.get("status")
+                or ""
+            )
+
+            normalized_status = _normalize_dhl_status(raw_status)
+
+            _LOGGER.debug("DHL latest event for %s: %s", code, latest_event)
+            _LOGGER.debug("DHL raw status for %s: %s", code, raw_status)
+            _LOGGER.debug("DHL normalized status for %s: %s", code, normalized_status)
+
+            detail = {
+                "code": code,
+                "status": normalized_status,
+                "summary": history.get("status"),
+                "event_status": latest_event.get("status"),
+                "date": latest_event.get("datum"),
+                "location": latest_event.get("ort"),
+                "destination_country": details.get("zielland"),
+            }
+
+            if normalized_status == "delivered":
+                result["dhl_delivered"] += 1
+
+            elif normalized_status == "delivering":
+                result["dhl_delivering"] += 1
+
+            elif normalized_status == "in_transit":
+                result["dhl_delivering"] += 1
+
+            else:
+                _LOGGER.debug("DHL status for %s not recognized", code)
+
+        except Exception as err:
+            _LOGGER.debug("DHL tracking lookup failed for %s: %s", code, err)
+
+        result["dhl_tracking"].append(code)
+        result["dhl_details"].append(detail)
+
+    result["dhl_packages"] = result["dhl_delivering"] + result["dhl_delivered"]
+    return result
+
 
 def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
     """Process emails and return value.
@@ -291,8 +433,11 @@ def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
     folder = config.get(CONF_FOLDER)
     resources = config.get(CONF_RESOURCES)
 
-    # Manual Correos codes from config + helper
-    correos_codes = _get_manual_correos_codes(hass, config)
+    # Manual tracking codes from config + helper
+    manual_codes = _get_manual_tracking_codes(hass, config)
+
+    correos_codes = [c for c in manual_codes if _detect_manual_carrier(c) == "correos"]
+    dhl_codes = [c for c in manual_codes if _detect_manual_carrier(c) == "dhl"]
 
     # Create the dict container
     data = {}
@@ -317,12 +462,19 @@ def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
         }
     )
 
-    _LOGGER.debug("Configured manual Correos codes: %s", correos_codes)
+    _LOGGER.debug("Configured manual tracking codes: %s", manual_codes)
+    _LOGGER.debug("Manual Correos codes: %s", correos_codes)
+    _LOGGER.debug("Manual DHL codes: %s", dhl_codes)
 
     if correos_codes:
         correos_info = get_correos_tracking_data(correos_codes)
         data.update(correos_info)
         _LOGGER.debug("Manual Correos tracking data: %s", correos_info)
+
+    if dhl_codes:
+        dhl_info = get_dhl_tracking_data(dhl_codes)
+        data.update(dhl_info)
+        _LOGGER.debug("Manual DHL tracking data: %s", dhl_info)
     
     for sensor in resources:
         fetch(hass, config, account, data, sensor)
