@@ -4,6 +4,7 @@ import datetime
 import email
 import hashlib
 import imaplib
+import json
 import locale
 import logging
 import os
@@ -194,47 +195,65 @@ def get_correos_tracking_data(codes: list) -> dict:
 
         try:
             url = (
-                "https://www.correos.es/es/es/herramientas/localizador/envios?numero="
-                f"{quote(code)}"
+                "https://api1.correos.es/digital-services/searchengines/api/v1/envios"
+                f"?text={quote(code)}&language=ES"
             )
             req = Request(
                 url,
                 headers={
                     "User-Agent": "Mozilla/5.0",
+                    "Accept": "application/json",
                 },
             )
 
             with urlopen(req, timeout=20) as response:
-                html = response.read().decode("utf-8", "ignore")
+                raw = response.read().decode("utf-8", "ignore")
 
-            text = " ".join(html.split())
-            text_normalized = _strip_accents(text).lower()
+            import json
+            payload = json.loads(raw)
 
-            if "entregado" in text_normalized:
-                raw_status = "entregado"
-            elif "en reparto" in text_normalized:
-                raw_status = "en reparto"
-            elif "en entrega" in text_normalized:
-                raw_status = "en entrega"
-            elif "en transito" in text_normalized:
-                raw_status = "en transito"
-            elif "en camino" in text_normalized:
-                raw_status = "en camino"
-            elif "admitido" in text_normalized:
-                raw_status = "admitido"
-            elif "clasificado" in text_normalized:
-                raw_status = "clasificado"
-            else:
-                raw_status = text_normalized[:300]
+            shipments = payload.get("shipment", [])
+            if not shipments:
+                _LOGGER.debug("Correos API returned no shipments for %s", code)
+                result["correos_tracking"].append(code)
+                result["correos_details"].append(detail)
+                continue
+
+            shipment = shipments[0]
+            events = shipment.get("events", [])
+
+            if not events:
+                _LOGGER.debug("Correos API returned no events for %s", code)
+                result["correos_tracking"].append(code)
+                result["correos_details"].append(detail)
+                continue
+
+            latest_event = events[-1]
+
+            raw_status = (
+                latest_event.get("summaryText")
+                or latest_event.get("desPhase")
+                or latest_event.get("extendedText")
+                or ""
+            )
 
             normalized_status = _normalize_correos_status(raw_status)
 
+            _LOGGER.debug("Correos API latest event for %s: %s", code, latest_event)
             _LOGGER.debug("Correos raw status for %s: %s", code, raw_status)
             _LOGGER.debug(
                 "Correos normalized status for %s: %s", code, normalized_status
             )
 
-            detail["status"] = normalized_status
+            detail = {
+                "code": code,
+                "status": normalized_status,
+                "phase": latest_event.get("desPhase"),
+                "summary": latest_event.get("summaryText"),
+                "extended": latest_event.get("extendedText"),
+                "date": latest_event.get("eventDate"),
+                "time": latest_event.get("eventTime"),
+            }
 
             if normalized_status == "delivered":
                 result["correos_delivered"] += 1
