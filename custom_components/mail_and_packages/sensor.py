@@ -80,11 +80,14 @@ class PackagesSensor(CoordinatorEntity, SensorEntity):
     @property
     def native_value(self) -> Any:
         """Return the state of the sensor."""
-        if self.type in self.coordinator.data:
-            if self.type == "mail_updated":
-                return datetime.datetime.now(timezone.utc)
-            return self.coordinator.data[self.type]
-        return None
+        data = self.coordinator.data
+        if data is None:
+            return None
+
+        if self.type == "mail_updated":
+            return datetime.datetime.now(timezone.utc)
+
+        return data.get(self.type)
 
     @property
     def should_poll(self) -> bool:
