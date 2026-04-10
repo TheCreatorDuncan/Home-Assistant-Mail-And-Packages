@@ -209,7 +209,6 @@ def get_correos_tracking_data(codes: list) -> dict:
             with urlopen(req, timeout=20) as response:
                 raw = response.read().decode("utf-8", "ignore")
 
-            import json
             payload = json.loads(raw)
 
             shipments = payload.get("shipment", [])
