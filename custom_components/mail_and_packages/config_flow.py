@@ -76,8 +76,8 @@ async def _check_amazon_forwards(forwards: str) -> tuple:
     return errors, amazon_forwards_list
 
 
-async def _check_correos_codes(codes: str) -> tuple:
-    """Validate and format manual Correos tracking codes.
+async def _check_manual_tracking_codes(codes: str) -> tuple:
+    """Validate and format manual tracking codes from the config flow.
 
     Returns tuple: list of errors, list of tracking codes
     """
@@ -111,9 +111,11 @@ async def _validate_user_input(user_input: dict) -> tuple:
             user_input[CONF_AMAZON_FWDS] = amazon_list
             errors[CONF_AMAZON_FWDS] = status[0]
 
-    # Validate manual Correos tracking codes
+    # Validate manual tracking codes
     if CONF_CORREOS_CODES in user_input and isinstance(user_input[CONF_CORREOS_CODES], str):
-        status, correos_list = await _check_correos_codes(user_input[CONF_CORREOS_CODES])
+        status, correos_list = await _check_manual_tracking_codes(
+            user_input[CONF_CORREOS_CODES]
+        )
         if status[0] == "ok":
             user_input[CONF_CORREOS_CODES] = correos_list
         else:
