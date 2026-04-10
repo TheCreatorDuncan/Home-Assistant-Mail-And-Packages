@@ -360,8 +360,18 @@ def get_dhl_tracking_data(codes: list) -> dict:
 
             with urlopen(req, timeout=20) as response:
                 raw = response.read().decode("utf-8", "ignore")
+            
+            _LOGGER.debug("DHL raw response for %s: %s", code, raw[:1000])
+            raw_clean = raw.lstrip()
 
-            payload = json.loads(raw)
+            # Sommige endpoints geven rommel of prefixes mee vóór de JSON
+            json_start = raw_clean.find("{")
+            if json_start > 0:
+                raw_clean = raw_clean[json_start:]
+
+            _LOGGER.debug("DHL cleaned response for %s: %s", code, raw_clean[:1000])
+
+            payload = json.loads(raw_clean)
             shipments = payload.get("sendungen", [])
 
             if not shipments:
