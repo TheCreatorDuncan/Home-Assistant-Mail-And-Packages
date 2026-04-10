@@ -9,6 +9,7 @@ import logging
 import os
 import quopri
 import re
+import unicodedata
 import uuid
 from datetime import timezone
 from email.header import decode_header
@@ -16,6 +17,7 @@ from shutil import copyfile, copytree, which
 from typing import Any, List, Optional, Type, Union
 from urllib.parse import quote
 from urllib.request import Request, urlopen
+
 
 import aiohttp
 from homeassistant.config_entries import ConfigEntry
@@ -142,6 +144,36 @@ def _get_manual_correos_codes(hass: HomeAssistant, config: ConfigEntry) -> list:
 
     return codes
 
+def _strip_accents(value: str) -> str:
+    return "".join(
+        c for c in unicodedata.normalize("NFD", value)
+        if unicodedata.category(c) != "Mn"
+    )
+
+
+def _normalize_correos_status(text: str) -> str:
+    if not text:
+        return "unknown"
+
+    status = _strip_accents(text).strip().lower()
+
+    if "entregado" in status:
+        return "delivered"
+
+    if "en reparto" in status or "en entrega" in status:
+        return "delivering"
+
+    if (
+        "en transito" in status
+        or "en camino" in status
+        or "admitido" in status
+        or "clasificado" in status
+    ):
+        return "in_transit"
+
+    return "unknown"
+
+
 def get_correos_tracking_data(codes: list) -> dict:
     """Fetch Correos tracking data for manually entered tracking codes."""
     result = {
@@ -156,7 +188,8 @@ def get_correos_tracking_data(codes: list) -> dict:
         return result
 
     for code in codes:
-        status = "unknown"
+        normalized_status = "unknown"
+        raw_status = ""
         detail = {"code": code, "status": "unknown"}
 
         try:
@@ -170,29 +203,50 @@ def get_correos_tracking_data(codes: list) -> dict:
                     "User-Agent": "Mozilla/5.0",
                 },
             )
+
             with urlopen(req, timeout=20) as response:
                 html = response.read().decode("utf-8", "ignore")
 
-            text = " ".join(html.split()).lower()
+            text = " ".join(html.split())
+            text_normalized = _strip_accents(text).lower()
 
-            if "entregado" in text:
-                status = "delivered"
+            if "entregado" in text_normalized:
+                raw_status = "entregado"
+            elif "en reparto" in text_normalized:
+                raw_status = "en reparto"
+            elif "en entrega" in text_normalized:
+                raw_status = "en entrega"
+            elif "en transito" in text_normalized:
+                raw_status = "en transito"
+            elif "en camino" in text_normalized:
+                raw_status = "en camino"
+            elif "admitido" in text_normalized:
+                raw_status = "admitido"
+            elif "clasificado" in text_normalized:
+                raw_status = "clasificado"
+            else:
+                raw_status = text_normalized[:300]
+
+            normalized_status = _normalize_correos_status(raw_status)
+
+            _LOGGER.debug("Correos raw status for %s: %s", code, raw_status)
+            _LOGGER.debug(
+                "Correos normalized status for %s: %s", code, normalized_status
+            )
+
+            detail["status"] = normalized_status
+
+            if normalized_status == "delivered":
                 result["correos_delivered"] += 1
-            elif "en reparto" in text or "proceso de entrega" in text:
-                status = "delivering"
-                result["correos_delivering"] += 1
-            elif (
-                "en tránsito" in text
-                or "en transito" in text
-                or "en camino" in text
-                or "admitido" in text
-                or "clasificado" in text
-                or "en oficina" in text
-            ):
-                status = "transit"
+
+            elif normalized_status == "delivering":
                 result["correos_delivering"] += 1
 
-            detail["status"] = status
+            elif normalized_status == "in_transit":
+                result["correos_delivering"] += 1
+
+            else:
+                _LOGGER.debug("Correos status for %s not recognized", code)
 
         except Exception as err:
             _LOGGER.debug("Correos tracking lookup failed for %s: %s", code, err)
@@ -205,7 +259,7 @@ def get_correos_tracking_data(codes: list) -> dict:
     )
 
     return result
-
+    
 
 def process_emails(hass: HomeAssistant, config: ConfigEntry) -> dict:
     """Process emails and return value.
