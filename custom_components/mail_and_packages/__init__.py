@@ -276,4 +276,5 @@ class MailDataUpdateCoordinator(DataUpdateCoordinator):
             except Exception as error:
                 _LOGGER.error("Problem updating sensors: %s", error)
                 raise UpdateFailed(error) from error
-            return data
+
+        return data or {}
