@@ -215,6 +215,22 @@ SENSOR_DATA = {
     "gls_tracking": {
         "pattern": ["\\d{10}"]
     },
+    
+    # DHL
+    "dhl_delivered": {
+        "email": [], #yet to be defined
+        "subject": [], #yet to be defined
+        "body": [], #yet to be defined
+    },
+    "dhl_delivering": {
+        "email": [], #yet to be defined
+        "subject": [], #yet to be defined
+        "body": [], #yet to be defined
+    },
+    "dhl_packages": {},
+    "dhl_tracking": {
+        "pattern": ["[A-Z]{2}\\d{9}[A-Z]{2}"]
+    },
 }
 # Sensor definitions
 SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
@@ -332,6 +348,26 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         key="gls_packages",
     ),
 
+    # DHL
+    "dhl_delivering": SensorEntityDescription(
+        name="Mail DHL Delivering",
+        native_unit_of_measurement="package(s)",
+        icon="mdi:truck-delivery",
+        key="dhl_delivering",
+    ),
+    "dhl_delivered": SensorEntityDescription(
+        name="Mail DHL Delivered",
+        native_unit_of_measurement="package(s)",
+        icon="mdi:package-variant",
+        key="dhl_delivered",
+    ),
+    "dhl_packages": SensorEntityDescription(
+        name="Mail DHL Packages",
+        native_unit_of_measurement="package(s)",
+        icon="mdi:package-variant-closed",
+        key="dhl_packages",
+    ),
+    
     ###
     # !!! Insert new sensors above these two !!!
     ###
@@ -367,4 +403,5 @@ SHIPPERS = [
     "ctt_express",
     "gls",
     "tipsa",
+    "dhl",
 ]
