@@ -1,0 +1,94 @@
+type: vertical-stack
+cards:
+  - type: markdown
+    content: >
+      ## <center>📦 Pakketoverzicht</center>
+
+      **<center>In transit:** {{ states('sensor.mail_packages_in_transit') }}
+
+      **Bezorgd vandaag:** {{ states('sensor.mail_packages_delivered') }}
+      </center> 
+  - show_name: true
+    show_icon: true
+    type: button
+    name: Scan pakketten nu
+    icon: mdi:refresh
+    tap_action:
+      action: call-service
+      service: mail_and_packages.force_scan
+    icon_height: 50px
+    show_state: false
+  - type: entities
+    title: Tracking invoer
+    entities:
+      - entity: input_text.correos_tracking
+        name: Voer trackingcode in (Correos, DHL)
+  - type: glance
+    title: Actieve bezorgingen
+    show_state: true
+    entities:
+      - entity: sensor.mail_amazon_packages
+        name: Amazon
+        icon: mdi:shopping
+      - entity: sensor.mail_ctt_express_packages
+        name: CTT Express
+        icon: mdi:truck-fast
+      - entity: sensor.mail_tipsa_packages
+        name: TIPSA
+        icon: mdi:truck-delivery
+      - entity: sensor.mail_gls_packages
+        name: GLS
+        icon: mdi:truck-cargo-container
+      - entity: sensor.mail_correos_packages
+        name: Correos
+        icon: mdi:mailbox
+      - entity: sensor.mail_dhl_packages
+        name: DHL
+        icon: mdi:truck
+  - type: entities
+    title: Onderweg
+    show_header_toggle: false
+    entities:
+      - entity: sensor.mail_amazon_packages
+        name: Amazon
+        icon: mdi:shopping
+      - entity: sensor.mail_ctt_express_delivering
+        name: CTT Express
+        icon: mdi:truck-fast
+      - entity: sensor.mail_tipsa_delivering
+        name: TIPSA
+        icon: mdi:truck-delivery
+      - entity: sensor.mail_gls_delivering
+        name: GLS
+        icon: mdi:truck-cargo-container
+      - entity: sensor.mail_correos_delivering
+        name: Correos
+        icon: mdi:mailbox
+      - entity: sensor.mail_dhl_delivering
+        name: DHL
+        icon: mdi:truck
+  - type: entities
+    title: Bezorgd
+    show_header_toggle: false
+    entities:
+      - entity: sensor.mail_amazon_packages_delivered
+        name: Amazon
+        icon: mdi:package-check
+      - entity: sensor.mail_ctt_express_delivered
+        name: CTT Express
+        icon: mdi:package-check
+      - entity: sensor.mail_tipsa_delivered
+        name: TIPSA
+        icon: mdi:package-check
+      - entity: sensor.mail_gls_delivered
+        name: GLS
+        icon: mdi:package-check
+      - entity: sensor.mail_correos_delivered
+        name: Correos
+        icon: mdi:package-check
+      - entity: sensor.mail_dhl_delivered
+        name: DHL
+        icon: mdi:package-check
+grid_options:
+  columns: 12
+  rows: auto
