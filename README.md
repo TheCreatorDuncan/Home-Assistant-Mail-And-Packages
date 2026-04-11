@@ -170,6 +170,10 @@ to refresh package data instantly.
   <img src="docs/dashboard_example_mobile_2.jpg" alt="Example Mobile Dashboard" width="250">
 </p>
 
+A ready-to-use Lovelace example dashboard is available here:
+
+[`docs/dashboard-example.yaml`](docs/dashboard-example.yaml)
+
 ---
 
 ## Important difference from original
