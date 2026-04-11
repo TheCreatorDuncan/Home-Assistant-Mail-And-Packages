@@ -49,6 +49,24 @@ It improves package tracking for **EU carriers** and fixes limitations in the or
 - Delivered
 - Per carrier + total overview
 
+## Example Dashboard
+
+### PC
+<p align="center">
+  <img src="docs/dashboard_example_1.png" alt="Example PC Dashboard" width="800"> 
+</p>
+<p align="center">
+  <img src="docs/dashboard_example_2.png" alt="Example PC Dashboard" width="800"> 
+</p>
+
+### Mobile
+<p align="center">
+  <img src="docs/dashboard_example_mobile_1.jpg" alt="Example Mobile Dashboard" width="250">
+</p>
+<p align="center">
+  <img src="docs/dashboard_example_mobile_2.jpg" alt="Example Mobile Dashboard" width="250">
+</p>
+
 ---
 
 ## Important difference from original
