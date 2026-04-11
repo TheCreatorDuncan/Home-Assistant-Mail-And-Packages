@@ -8,6 +8,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_HOST, CONF_RESOURCES
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import (
@@ -33,6 +34,8 @@ from .const import (
 from .helpers import default_image_path, process_emails
 
 _LOGGER = logging.getLogger(__name__)
+STORAGE_VERSION = 1
+STORAGE_KEY = f"{DOMAIN}_manual_tracking"
 
 
 async def async_setup(
@@ -40,6 +43,26 @@ async def async_setup(
 ):  # pylint: disable=unused-argument
     """Disallow configuration via YAML."""
     return True
+
+
+async def _async_load_manual_tracking_store(hass: HomeAssistant) -> dict:
+    """Load persistent manual tracking data from storage."""
+    store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+    data = await store.async_load()
+
+    if not isinstance(data, dict):
+        data = {}
+
+    if "codes" not in data or not isinstance(data["codes"], list):
+        data["codes"] = []
+
+    return data
+
+
+async def _async_save_manual_tracking_store(hass: HomeAssistant, data: dict) -> None:
+    """Save persistent manual tracking data to storage."""
+    store = Store(hass, STORAGE_VERSION, STORAGE_KEY)
+    await store.async_save(data)
 
 
 async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
@@ -50,6 +73,9 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
         ISSUE_URL,
     )
     hass.data.setdefault(DOMAIN, {})
+    if "manual_tracking_store" not in hass.data[DOMAIN]:
+        hass.data[DOMAIN]["manual_tracking_store"] = await _async_load_manual_tracking_store(hass)
+        
     updated_config = config_entry.data.copy()
 
     # Set amazon fwd blank if missing
@@ -127,8 +153,33 @@ async def async_setup_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> b
 
         async def handle_force_scan(call):
             """Force refresh all Mail and Packages coordinators."""
+            helper = hass.states.get("input_text.correos_tracking")
+            helper_codes = []
+
+            if helper is not None:
+                helper_value = helper.state
+                if helper_value not in [None, "", "unknown", "unavailable"]:
+                    helper_codes = [x.strip() for x in helper_value.split(",") if x.strip()]
+
+            store_data = hass.data[DOMAIN].get("manual_tracking_store", {"codes": []})
+            stored_codes = store_data.get("codes", [])
+
+            changed = False
+            for code in helper_codes:
+                if code not in stored_codes:
+                    stored_codes.append(code)
+                    changed = True
+
+            if changed:
+                store_data["codes"] = stored_codes
+                hass.data[DOMAIN]["manual_tracking_store"] = store_data
+                await _async_save_manual_tracking_store(hass, store_data)
+                _LOGGER.debug("Saved manual tracking codes to storage: %s", stored_codes)
+
             tasks = []
             for entry_data in hass.data.get(DOMAIN, {}).values():
+                if not isinstance(entry_data, dict):
+                    continue
                 entry_coordinator = entry_data.get(COORDINATOR)
                 if entry_coordinator is not None:
                     tasks.append(entry_coordinator.async_refresh())
