@@ -69,6 +69,7 @@ from .const import (
     CONF_FOLDER,
     CONF_PATH,
     DEFAULT_AMAZON_DAYS,
+    DOMAIN,
     SENSOR_DATA,
     SENSOR_TYPES,
     SHIPPERS,
@@ -122,9 +123,10 @@ def default_image_path(
     return "custom_components/mail_and_packages/images/"
 
 def _get_manual_tracking_codes(hass: HomeAssistant, config: ConfigEntry) -> list:
-    """Get manual tracking codes from config and helper."""
+    """Get manual tracking codes from config, storage, and helper."""
     codes = []
 
+    # Codes from integration config
     config_codes = config.get(CONF_CORREOS_CODES, [])
     if isinstance(config_codes, list):
         for code in config_codes:
@@ -132,6 +134,18 @@ def _get_manual_tracking_codes(hass: HomeAssistant, config: ConfigEntry) -> list
             if code and code not in codes:
                 codes.append(code)
 
+    # Codes from persistent storage
+    domain_data = hass.data.get(DOMAIN, {})
+    store_data = domain_data.get("manual_tracking_store", {})
+    stored_codes = store_data.get("codes", [])
+
+    if isinstance(stored_codes, list):
+        for code in stored_codes:
+            code = str(code).strip()
+            if code and code not in codes:
+                codes.append(code)
+
+    # Codes from input_text helper (also still read live)
     helper = hass.states.get("input_text.correos_tracking")
     if helper is not None:
         helper_value = helper.state
