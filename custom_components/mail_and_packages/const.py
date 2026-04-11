@@ -218,14 +218,26 @@ SENSOR_DATA = {
     
     # DHL
     "dhl_delivered": {
-        "email": [], #yet to be defined
-        "subject": [], #yet to be defined
-        "body": [], #yet to be defined
+        "email": ["noreply@dhl.de"],
+        "subject": ['Current status of the shipment'],
+        "body": [
+            "(?i)successfully delivered",
+            "(?i)shipment has been delivered",
+            "(?i)delivered",
+        ],
     },
     "dhl_delivering": {
-        "email": [], #yet to be defined
-        "subject": [], #yet to be defined
-        "body": [], #yet to be defined
+        "email": ["noreply@dhl.de"],
+        "subject": ['Current status of the shipment'],
+        "body": [
+            "(?i)processed in the export parcel center",
+            "(?i)processed in the parcel center of origin",
+            "(?i)processed in the parcel center",
+            "(?i)international shipment has been processed",
+            "(?i)out for delivery",
+            "(?i)with the delivery courier",
+            "(?i)delivery vehicle",
+        ],
     },
     "dhl_packages": {},
     "dhl_tracking": {
