@@ -24,7 +24,6 @@ It improves package tracking for **EU carriers** and fixes limitations in the or
 - DHL (email parsing support)
 - GLS / CTT / others (via email parsing)
 
----
 
 ### Persistent manual tracking
 - Add tracking codes manually
@@ -34,20 +33,20 @@ It improves package tracking for **EU carriers** and fixes limitations in the or
   - clearing input fields
   - restarts
 
----
 
 ### Improved tracking behavior
 - No more disappearing packages after rescans
 - Works independently from email presence
 - Better handling of multi-carrier environments
 
----
 
 ### Dashboard-friendly sensors
 - Active packages
 - In transit
 - Delivered
 - Per carrier + total overview
+
+---
 
 ## Installation
 
@@ -60,7 +59,6 @@ Before installing this integration, make sure you have:
 * Shipment notification emails being sent to that email account
 * (For Gmail) an app password if 2FA is enabled
 
----
 
 ### Install via HACS (recommended)
 
@@ -74,7 +72,6 @@ Before installing this integration, make sure you have:
 6. Click **Install**
 7. Restart Home Assistant
 
----
 
 ### Manual installation
 
@@ -96,8 +93,6 @@ Before installing this integration, make sure you have:
 
 4. Restart Home Assistant
 
----
-
 ### Add the integration
 
 1. Go to **Settings → Devices & Services**
@@ -107,7 +102,6 @@ Before installing this integration, make sure you have:
 5. Select the carriers/sensors you want to enable
 6. Finish setup
 
----
 
 ### Optional: Manual tracking input
 
@@ -135,7 +129,6 @@ mail_and_packages.force_scan
 
 to refresh package data instantly.
 
----
 
 ### Notes
 
@@ -144,6 +137,18 @@ to refresh package data instantly.
 * Manual tracking codes are stored persistently
 * Tracking remains active even after clearing the helper input
 
+---
+
+## Quick Start
+
+1. Install the integration
+2. Connect your IMAP email account
+3. Enable the carriers you use
+4. Add the example dashboard YAML
+5. Optionally create `input_text.correos_tracking`
+6. Run `mail_and_packages.force_scan`
+
+---
 
 ## Example Dashboard
 
@@ -154,6 +159,8 @@ to refresh package data instantly.
 <p align="center">
   <img src="docs/dashboard_example_2.png" alt="Example PC Dashboard" width="800"> 
 </p>
+
+
 
 ### Mobile
 <p align="center">
