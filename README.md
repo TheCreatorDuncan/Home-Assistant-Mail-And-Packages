@@ -49,6 +49,102 @@ It improves package tracking for **EU carriers** and fixes limitations in the or
 - Delivered
 - Per carrier + total overview
 
+## Installation
+
+### Requirements
+
+Before installing this integration, make sure you have:
+
+* Home Assistant running
+* An email account accessible via IMAP
+* Shipment notification emails being sent to that email account
+* (For Gmail) an app password if 2FA is enabled
+
+---
+
+### Install via HACS (recommended)
+
+1. Open **HACS** in Home Assistant
+2. Go to **Integrations**
+3. Click the **⋮ menu (top right)** → **Custom repositories**
+4. Add this repository
+
+   * Category: **Integration**
+5. Search for **Mail and Packages (EU Fork)**
+6. Click **Install**
+7. Restart Home Assistant
+
+---
+
+### Manual installation
+
+1. Download the latest release from this repository
+
+2. Extract the contents
+
+3. Copy the folder:
+
+   ```
+   custom_components/mail_and_packages
+   ```
+
+   into your Home Assistant configuration folder:
+
+   ```
+   /config/custom_components/mail_and_packages
+   ```
+
+4. Restart Home Assistant
+
+---
+
+### Add the integration
+
+1. Go to **Settings → Devices & Services**
+2. Click **Add Integration**
+3. Search for **Mail and Packages**
+4. Enter your IMAP email settings
+5. Select the carriers/sensors you want to enable
+6. Finish setup
+
+---
+
+### Optional: Manual tracking input
+
+This fork supports manual tracking codes via a Home Assistant helper.
+
+Create a helper:
+
+* Type: **Text**
+* Entity:
+
+  ```
+  input_text.correos_tracking
+  ```
+
+You can enter:
+
+* Correos tracking codes
+* DHL tracking codes
+
+Then run the service:
+
+```
+mail_and_packages.force_scan
+```
+
+to refresh package data instantly.
+
+---
+
+### Notes
+
+* Correos manual tracking uses the Correos API
+* DHL is currently supported via email parsing
+* Manual tracking codes are stored persistently
+* Tracking remains active even after clearing the helper input
+
+
 ## Example Dashboard
 
 ### PC
@@ -100,15 +196,6 @@ All processing is **local** (no external services)
 - Runs fully local in Home Assistant
 - No external APIs required (except optional carrier APIs like Correos)
 - Files in `/www` may be publicly accessible (see HA docs)
-
----
-
-## Installation
-
-### HACS (recommended)
-1. Add this repository as a custom repository
-2. Install the integration
-3. Restart Home Assistant
 
 ---
 
