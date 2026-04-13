@@ -802,6 +802,48 @@ def email_search(
         value = (check, [b""])
     return value
 
+def email_search_subject_only(
+    account: Type[imaplib.IMAP4_SSL], date: str, subject: str
+) -> tuple:
+    """Search emails by subject only, without FROM filter.
+
+    Useful for forwarded emails where the sender changes.
+    Returns a tuple
+    """
+    the_date = f"SINCE {date}"
+
+    if not subject:
+        try:
+            value = account.search(None, the_date)
+        except Exception as err:
+            _LOGGER.error("Error searching emails by date only: %s", str(err))
+            value = "BAD", err.args[0]
+        return value
+
+    if not subject.isascii():
+        search = f"{the_date} SUBJECT"
+        account.literal = subject.encode("utf-8")
+        try:
+            value = account.uid("SEARCH", "CHARSET", "UTF-8", search)
+        except Exception as err:
+            _LOGGER.warning(
+                "Error searching emails by unicode subject only: %s", str(err)
+            )
+            value = "BAD", err.args[0]
+    else:
+        search = f'(SUBJECT "{subject}" {the_date})'
+        try:
+            value = account.search(None, search)
+        except Exception as err:
+            _LOGGER.error("Error searching emails by subject only: %s", str(err))
+            value = "BAD", err.args[0]
+
+    (check, new_value) = value
+    if new_value and new_value[0] is None:
+        value = (check, [b""])
+
+    return value
+
 
 def email_fetch(
     account: Type[imaplib.IMAP4_SSL], num: int, parts: str = "(RFC822)"
@@ -898,6 +940,21 @@ def get_count(
             (server_response, data) = email_search(
                 account, email_addresses, today, subject
             )
+
+            # Fallback for forwarded CTT emails:
+            # sender changes to the user's own address, but subject stays usable.
+            if (
+                sensor_type.startswith("ctt_express_")
+                and (server_response != "OK" or not data or data[0] in [None, b""])
+            ):
+                _LOGGER.debug(
+                    "No direct CTT mail found from configured sender, "
+                    "trying subject-only fallback for forwarded emails: %s",
+                    subject,
+                )
+                (server_response, data) = email_search_subject_only(
+                    account, today, subject
+                )
 
             if server_response == "OK" and data[0] is not None:
                 if ATTR_BODY in SENSOR_DATA[sensor_type] and SENSOR_DATA[sensor_type][ATTR_BODY]:
