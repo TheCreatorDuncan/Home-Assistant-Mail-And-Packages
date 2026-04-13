@@ -941,15 +941,13 @@ def get_count(
                 account, email_addresses, today, subject
             )
 
-            # Fallback for forwarded CTT emails:
-            # sender changes to the user's own address, but subject stays usable.
-            if (
-                sensor_type.startswith("ctt_express_")
-                and (server_response != "OK" or not data or data[0] in [None, b""])
-            ):
+            # Generic fallback for forwarded carrier emails:
+            # the original sender may change, but the subject often remains usable.
+            if server_response != "OK" or not data or data[0] in [None, b""]:
                 _LOGGER.debug(
-                    "No direct CTT mail found from configured sender, "
+                    "No direct mail found from configured sender for sensor %s, "
                     "trying subject-only fallback for forwarded emails: %s",
+                    sensor_type,
                     subject,
                 )
                 (server_response, data) = email_search_subject_only(
