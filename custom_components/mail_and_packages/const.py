@@ -166,16 +166,23 @@ SENSOR_DATA = {
     "ctt_express_delivered": {
         "email": ["noreplyclientes@cttexpress.org"],
         "subject": ["Información envío -"],
-        "body": ["ha sido entregado", "Entregado a"],
+        "body": [
+            "ha sido entregado",
+            "Entregado a",
+        ],
     },
     "ctt_express_delivering": {
         "email": ["noreplyclientes@cttexpress.org"],
         "subject": ["Información envío -"],
-        "body": ["está en reparto"],
+        "body": [
+            "está en reparto",
+            "está viajando a destino",
+            "Tenemos previsto entregarlo antes del día",
+        ],
     },
     "ctt_express_packages": {},
     "ctt_express_tracking": {
-        "pattern": ["\\d{22}"]
+        "pattern": ["\\b\\d{22}\\b"]
     },
 
     # TIPSA
