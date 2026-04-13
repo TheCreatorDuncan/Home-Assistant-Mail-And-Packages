@@ -167,17 +167,17 @@ SENSOR_DATA = {
         "email": ["noreplyclientes@cttexpress.org"],
         "subject": ["Información envío -"],
         "body": [
-            "ha sido entregado",
-            "Entregado a",
+            "(?i)ha sido entregado",
+            "(?i)entregado a",
         ],
     },
     "ctt_express_delivering": {
         "email": ["noreplyclientes@cttexpress.org"],
         "subject": ["Información envío -"],
         "body": [
-            "está en reparto",
-            "está viajando a destino",
-            "Tenemos previsto entregarlo antes del día",
+            "(?i)est[aá] en reparto",
+            "(?i)est[aá] viajando a destino",
+            "(?i)tenemos previsto entregarlo antes del d[ií]a",
         ],
     },
     "ctt_express_packages": {},
