@@ -896,6 +896,7 @@ def get_count(
     today = get_formatted_date()
     track = None
     found = []
+    seen_mail_ids = set()    
 
     if sensor_type == AMAZON_DELIVERED:
         result[ATTR_COUNT] = amazon_search(account, image_path, hass, amazon_image_name)
@@ -919,15 +920,26 @@ def get_count(
         (server_response, data) = email_search(account, email_addresses, today)
 
         if server_response == "OK" and data[0] is not None:
-            if ATTR_BODY in SENSOR_DATA[sensor_type] and SENSOR_DATA[sensor_type][ATTR_BODY]:
-                total_body_matches = 0
-                for body_search in SENSOR_DATA[sensor_type][ATTR_BODY]:
-                    total_body_matches += find_text(data, account, body_search)
-                count += total_body_matches
-            else:
-                count += len(data[0].split())
+            mail_ids = data[0].split()
+            unique_mail_ids = []
 
-            found.append(data[0])
+            for mail_id in mail_ids:
+                if mail_id not in seen_mail_ids:
+                    seen_mail_ids.add(mail_id)
+                    unique_mail_ids.append(mail_id)
+
+            if unique_mail_ids:
+                filtered_data = [b" ".join(unique_mail_ids)]
+
+                if ATTR_BODY in SENSOR_DATA[sensor_type] and SENSOR_DATA[sensor_type][ATTR_BODY]:
+                    total_body_matches = 0
+                    for body_search in SENSOR_DATA[sensor_type][ATTR_BODY]:
+                        total_body_matches += find_text(filtered_data, account, body_search)
+                    count += total_body_matches
+                else:
+                    count += len(unique_mail_ids)
+
+                found.append(filtered_data[0])
 
     else:
         for subject in subjects:
@@ -955,15 +967,28 @@ def get_count(
                 )
 
             if server_response == "OK" and data[0] is not None:
+                mail_ids = data[0].split()
+                unique_mail_ids = []
+
+                for mail_id in mail_ids:
+                    if mail_id not in seen_mail_ids:
+                        seen_mail_ids.add(mail_id)
+                        unique_mail_ids.append(mail_id)
+
+                if not unique_mail_ids:
+                    continue
+
+                filtered_data = [b" ".join(unique_mail_ids)]
+
                 if ATTR_BODY in SENSOR_DATA[sensor_type] and SENSOR_DATA[sensor_type][ATTR_BODY]:
                     total_body_matches = 0
                     for body_search in SENSOR_DATA[sensor_type][ATTR_BODY]:
-                        total_body_matches += find_text(data, account, body_search)
+                        total_body_matches += find_text(filtered_data, account, body_search)
                     count += total_body_matches
                 else:
-                    count += len(data[0].split())
+                    count += len(unique_mail_ids)
 
-                found.append(data[0])
+                found.append(filtered_data[0])
 
     tracking_key = f"{'_'.join(sensor_type.split('_')[:-1])}_tracking"
     if (
@@ -973,7 +998,7 @@ def get_count(
     ):
         track = SENSOR_DATA[tracking_key][ATTR_PATTERN][0]
 
-    if track is not None and get_tracking_num and count > 0:
+    if track is not None and count > 0:
         for sdata in found:
             tracking.extend(get_tracking(sdata, account, track))
         tracking = list(dict.fromkeys(tracking))
