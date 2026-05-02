@@ -409,6 +409,26 @@ SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
         icon="mdi:package-variant-closed",
         key="dhl_packages",
     ),
+
+    # EcoScooting
+    "ecoscooting_delivering": SensorEntityDescription(
+        name="Mail EcoScooting Delivering",
+        native_unit_of_measurement="package(s)",
+        icon="mdi:truck-delivery",
+        key="ecoscooting_delivering",
+    ),
+    "ecoscooting_delivered": SensorEntityDescription(
+        name="Mail EcoScooting Delivered",
+        native_unit_of_measurement="package(s)",
+        icon="mdi:package-variant",
+        key="ecoscooting_delivered",
+    ),
+    "ecoscooting_packages": SensorEntityDescription(
+        name="Mail EcoScooting Packages",
+        native_unit_of_measurement="package(s)",
+        icon="mdi:package-variant-closed",
+        key="ecoscooting_packages",
+    ),
     
     ###
     # !!! Insert new sensors above these two !!!
@@ -446,4 +466,8 @@ SHIPPERS = [
     "gls",
     "tipsa",
     "dhl",
+    "ecoscooting",
+    # TODO: Add when sensor data is implemented
+    # "seur",
+    # "mrw",
 ]
