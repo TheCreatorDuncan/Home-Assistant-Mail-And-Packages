@@ -216,7 +216,7 @@ SENSOR_DATA = {
     # EcoScooting
     "ecoscooting_delivered": {
         "email": ["noreply@service.ecoscooting.com"],
-        "subject": [], #yet to be defined
+        "subject": ["Punto de Recogida"],
         "body": [
             "(?i)ha sido entregado",
             "(?i)entregado",
@@ -224,7 +224,7 @@ SENSOR_DATA = {
     },
     "ecoscooting_delivering": {
         "email": ["noreply@service.ecoscooting.com"],
-        "subject": [], #yet to be defined
+        "subject": ["Punto de Recogida"],
         "body": [
             "(?i)ya est[aá] de camino a nuestros almacenes",
             "(?i)ser[aá] entregado en la siguiente direcci[oó]n",
