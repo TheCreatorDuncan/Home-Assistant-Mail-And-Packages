@@ -185,44 +185,6 @@ SENSOR_DATA = {
         "pattern": ["\\b\\d{22}\\b"]
     },
 
-    # TIPSA
-    "tipsa_delivered": {
-        "email": ["no-reply@tip-sa.com"],
-        "subject": ["INFORMACIÓN SOBRE TU ENVÍO - TIPSA"],
-        "body": ["ha sido entregado"],
-    },
-    "tipsa_delivering": {
-        "email": ["no-reply@tip-sa.com"],
-        "subject": ["INFORMACIÓN SOBRE TU ENVÍO - TIPSA"],
-        "body": ["se encuentra en reparto", "se encuentra en camino"],
-    },
-    "tipsa_packages": {},
-    "tipsa_tracking": {
-        "pattern": ["\\d{22}"]
-    },
-
-    # GLS Spain
-    "gls_delivered": {
-        "email": ["noreply@comunicaciones.gls-spain.com"],
-        "subject": [], #yet to be defined
-        "body": [], #yet to be defined
-    },
-    "gls_delivering": {
-        "email": ["noreply@comunicaciones.gls-spain.com"],
-        "subject": [
-            "está en reparto",
-            "está en camino",
-        ],
-        "body": [
-            "ya está en reparto",
-            "está en camino",
-        ],
-    },
-    "gls_packages": {},
-    "gls_tracking": {
-        "pattern": ["\\d{10}"]
-    },
-    
     # DHL
     "dhl_delivered": {
         "email": ["noreply@dhl.de"],
@@ -250,7 +212,68 @@ SENSOR_DATA = {
     "dhl_tracking": {
         "pattern": ["[A-Z]{2}\\d{9}[A-Z]{2}"]
     },
+
+    # EcoScooting
+    "ecoscooting_delivered": {
+        "email": ["noreply@service.ecoscooting.com"],
+        "subject": [], #yet to be defined
+        "body": [
+            "(?i)ha sido entregado",
+            "(?i)entregado",
+        ],
+    },
+    "ecoscooting_delivering": {
+        "email": ["noreply@service.ecoscooting.com"],
+        "subject": [], #yet to be defined
+        "body": [
+            "(?i)ya est[aá] de camino a nuestros almacenes",
+            "(?i)ser[aá] entregado en la siguiente direcci[oó]n",
+        ],
+    },
+    "ecoscooting_packages": {},
+    "ecoscooting_tracking": {
+        "pattern": ["\\bAP\\d{14}\\b"] #presumably, yet to be finally defined 
+    },
+
+    # GLS Spain
+    "gls_delivered": {
+        "email": ["noreply@comunicaciones.gls-spain.com"],
+        "subject": [], #yet to be defined
+        "body": [], #yet to be defined
+    },
+    "gls_delivering": {
+        "email": ["noreply@comunicaciones.gls-spain.com"],
+        "subject": [
+            "está en reparto",
+            "está en camino",
+        ],
+        "body": [
+            "ya está en reparto",
+            "está en camino",
+        ],
+    },
+    "gls_packages": {},
+    "gls_tracking": {
+        "pattern": ["\\d{10}"]
+    },
+
+    # TIPSA
+    "tipsa_delivered": {
+        "email": ["no-reply@tip-sa.com"],
+        "subject": ["INFORMACIÓN SOBRE TU ENVÍO - TIPSA"],
+        "body": ["ha sido entregado"],
+    },
+    "tipsa_delivering": {
+        "email": ["no-reply@tip-sa.com"],
+        "subject": ["INFORMACIÓN SOBRE TU ENVÍO - TIPSA"],
+        "body": ["se encuentra en reparto", "se encuentra en camino"],
+    },
+    "tipsa_packages": {},
+    "tipsa_tracking": {
+        "pattern": ["\\d{22}"]
+    },
 }
+
 # Sensor definitions
 SENSOR_TYPES: Final[dict[str, SensorEntityDescription]] = {
     "mail_updated": SensorEntityDescription(
